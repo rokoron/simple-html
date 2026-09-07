@@ -1,4 +1,12 @@
 .DS_Store
+
+# Vercel CLI が作る作業用フォルダ（プロジェクトIDなどが入る）
 .vercel
+
+# 環境変数ファイル。認証トークンが入るため絶対にコミットしない
+.env
+.env.local
+.env*.local
+
 node_modules/
 *.log

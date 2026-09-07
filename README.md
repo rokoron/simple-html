@@ -12,6 +12,13 @@ simple-html/
 └── README.md
 ```
 
+Vercel CLI を使うと、次の2つが自動で作られる。どちらも `.gitignore` で除外済みなのでコミットされない。
+
+| 生成物 | 中身 | 扱い |
+|---|---|---|
+| `.vercel/` | プロジェクトID・組織IDなどの紐付け情報 | 消しても再リンクすれば戻る |
+| `.env.local` | `VERCEL_OIDC_TOKEN`（認証トークン） | **絶対にコミットしない** |
+
 ビルド不要。`index.html` をブラウザで開けばそのまま表示される。
 
 ## VSCode でのプレビュー
@@ -104,14 +111,34 @@ https://<GitHubユーザー名>.github.io/simple-html/
 
 数十秒で `https://＜プロジェクト名＞.vercel.app` が発行される。
 
-VSCode の中だけで済ませたい場合は Vercel CLI を使う:
+### VSCode の中だけで済ませる場合（Vercel CLI）
+
+VSCode の統合ターミナル（`Ctrl + @` で開く）で実行する。
 
 ```bash
-npm i -g vercel     # 初回のみ
-vercel login
-vercel              # プレビュー環境へデプロイ
-vercel --prod       # 本番へデプロイ
+npx vercel login    # ブラウザが開いて認証
+npx vercel          # プレビュー環境へデプロイ
+npx vercel --prod   # 本番へデプロイ
 ```
+
+**`npm i -g vercel` はこの環境では失敗する。** `/usr/local/lib/node_modules` が root 所有で、書き込み権限がないため。
+
+```
+npm error code EACCES
+npm error Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/vercel'
+```
+
+`npx` を使えばインストール自体が不要なので、この問題を回避できる。
+
+> どうしても `vercel` コマンドとして常設したい場合は、npm の保存先をホーム配下へ移す（sudo 不要）。
+>
+> ```bash
+> mkdir -p ~/.npm-global
+> npm config set prefix ~/.npm-global
+> echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.zshrc
+> source ~/.zshrc
+> npm i -g vercel
+> ```
 
 ## 手順 5：更新が反映されるか確認する
 
@@ -137,3 +164,26 @@ GitHub Pages も Vercel も、**push するたびに自動で再デプロイ**�
 | 向き | 静的サイト専用 | 静的サイト＋動的な処理も可 |
 
 今回のような HTML と CSS だけのページなら、どちらでも同じ結果になる。両方試すと違いが分かりやすい。
+
+## 用語メモ：npm と npx の違い
+
+どちらも Node.js に付属するコマンドで、名前が1文字しか違わないが役割が別。
+
+| | npm | npx |
+|---|---|---|
+| 役割 | 道具を**置いておく** | 道具を**その場で使う** |
+| インストール | する | しない（使い終わったら残らない） |
+| 保存場所 | `/usr/local/lib/node_modules`（要権限） | 一時キャッシュ（権限不要） |
+| 向き | 毎日使う道具 | たまにしか使わない道具 |
+
+**たとえるなら**、npm は工具を買って棚に置くこと、npx は必要なときだけレンタルすること。
+
+今回 Vercel CLI を使うのはデプロイのときだけなので、棚に置く必要がなかった。だから npx で十分だった。
+
+### 今回起きたことの流れ
+
+1. `npm i -g vercel` を実行 → 棚（`/usr/local/lib/node_modules`）に置こうとした
+2. その棚は管理者（root）のもので、鍵がかかっていた → `EACCES: permission denied`
+3. `npx vercel` に切り替え → 棚に置かず、その場で借りて実行 → 成功
+
+`-g` は global の略で「パソコン全体で使える場所に置く」という意味。この「全体で使える場所」が権限で守られていたのが今回の詰まりどころ。
